@@ -6,36 +6,29 @@ import _ from 'lodash';
 import produce from 'immer';
 
 
-const editPropertyState = selectorFamily<number | null, string>({
+const editPropertyState = selectorFamily<number, {path: string, id: number}>({
     key: 'editProperty',
-    get: (path) => ({get}) => {
-        const selectedElement = get(selectedElementState);
-        if (selectedElement === null) return null;
-
-        const element = get(elementState(selectedElement));
+    get: ({path, id}) => ({get}) => {
+        const element = get(elementState(id));
         return _.get(element, path);
     },
-    set: (path) => ({get, set}, newValue) => {
-        const selectedElement = get(selectedElementState);
-        if (selectedElement === null) return null;
+    set: ({path, id}) => ({get, set}, newValue) => {
 
-        const element = get(elementState(selectedElement));
+        const element = get(elementState(id));
         const newElement = produce(element, (draft) => {
             _.set(draft, path, newValue);
         })
-        set(elementState(selectedElement), newElement);
+        set(elementState(id), newElement);
     }
-})
-export const EditProperties = () => {
-    const [top, setTop] = useRecoilState(editPropertyState('style.position.top'));
-    const [left, setLeft] = useRecoilState(editPropertyState('style.position.left'));
-    const [width, setWidth] = useRecoilState(editPropertyState('style.size.width'));
-    const [height, setHeight] = useRecoilState(editPropertyState('style.size.height'));
-    
-    const selectedElement = useRecoilValue(selectedElementState);
+});
 
-    // if (selectedElement === null) return null;
-    if (top === null || left === null || width === null || height === null) return null;
+export const EditProperties = () => {
+    const selectedElement = useRecoilValue(selectedElementState);
+    
+    const [top, setTop] = useRecoilState(editPropertyState({path: 'style.position.top', id: selectedElement as number}));
+    const [left, setLeft] = useRecoilState(editPropertyState({path: 'style.position.left', id: selectedElement as number}));
+    const [width, setWidth] = useRecoilState(editPropertyState({path: 'style.size.width', id: selectedElement as number}));
+    const [height, setHeight] = useRecoilState(editPropertyState({path: 'style.size.height', id: selectedElement as number}));
 
     return (
         <Card>
