@@ -1,6 +1,7 @@
 import { atomFamily, useRecoilState } from 'recoil'
 import {selectedElementState} from '../../Canvas'
 import {Drag} from '../Drag'
+import { Resize } from '../Resize'
 import {RectangleContainer} from './RectangleContainer'
 import {RectangleInner} from './RectangleInner'
 
@@ -23,8 +24,23 @@ export const elementState = atomFamily<Element, number>({
 export const Rectangle = ({id}: {id: number}) => {
     const [selectedElement, setSelectedElement] = useRecoilState(selectedElementState)
     const [element, setElement] = useRecoilState(elementState(id));
+    const selected = selectedElement === id;
 
     return (
+    <RectangleContainer
+        position={element.style.position}
+        size={element.style.size}
+        onSelect={() => {
+            setSelectedElement(id)
+        }}
+    >
+    <Resize selected={selected}
+        position={element.style.position}
+        size={element.style.size}
+        onResize={(style) => {
+            setElement({...element, style})
+        }}
+    >
         <Drag
             position={element.style.position}
             onDrag={(position) => {
@@ -37,16 +53,12 @@ export const Rectangle = ({id}: {id: number}) => {
             }}
         >
             <div>
-                <RectangleContainer
-                    position={element.style.position}
-                    size={element.style.size}
-                    onSelect={() => {
-                        setSelectedElement(id)
-                    }}
-                >
                     <RectangleInner selected={id === selectedElement} />
-                </RectangleContainer>
+
             </div>
         </Drag>
+        </Resize>
+                </RectangleContainer>        
+
     )
 }
