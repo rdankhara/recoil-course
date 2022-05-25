@@ -1,71 +1,51 @@
 import {Heading, InputGroup, InputRightElement, NumberInput, NumberInputField, Text, VStack} from '@chakra-ui/react'
-import { setWith } from 'lodash';
-import { selector, useRecoilState, useRecoilValue } from 'recoil'
+import { selectorFamily, useRecoilState, useRecoilValue, useResetRecoilState } from 'recoil'
 import {  selectedElementState } from './Canvas'
 import { Element, elementState } from './components/Rectangle/Rectangle';
+import _ from 'lodash';
+import produce from 'immer';
 
-const selectedElementProperties = selector<Element | undefined>({
-    key: 'selectedElementProperties',
-    get: ({get}) => {
-        const selectedElementId = get(selectedElementState);
-        if (selectedElementId === null) return;
-        
-        return get(elementState(selectedElementId));
+
+const editPropertyState = selectorFamily<number | null, string>({
+    key: 'editProperty',
+    get: (path) => ({get}) => {
+        const selectedElement = get(selectedElementState);
+        if (selectedElement === null) return null;
+
+        const element = get(elementState(selectedElement));
+        return _.get(element, path);
     },
-    set: ({set, get}, newElement) => {
-        const selectedElementId = get(selectedElementState);
-        if (selectedElementId === null)  return;
-        if (!newElement) return;
+    set: (path) => ({get, set}, newValue) => {
+        const selectedElement = get(selectedElementState);
+        if (selectedElement === null) return null;
 
-        set(elementState(selectedElementId), newElement)
+        const element = get(elementState(selectedElement));
+        const newElement = produce(element, (draft) => {
+            _.set(draft, path, newValue);
+        })
+        set(elementState(selectedElement), newElement);
     }
-});
-
+})
 export const EditProperties = () => {
-    // const element = useRecoilValue(selectedElementProperties);
-    const [element, setElement] = useRecoilState(selectedElementProperties);
-    if (!element) return null;
-    const setPosition = (property: 'top' | 'left', value: number) => {
-        setElement({
-                        ...element, 
-                        style: {
-                            ...element.style,
-                            position: {
-                                ...element.style.position,
-                                [property]: value,
-                            }
-                        }
-                    });
-    }
-        const setSize = (property: 'width' | 'height', value: number) => {
-        setElement({
-                        ...element, 
-                        style: {
-                            ...element.style,
-                            position: {
-                                ...element.style.position,
-                                [property]: value,
-                            }
-                        }
-                    });
-    }
+    const [top, setTop] = useRecoilState(editPropertyState('style.position.top'));
+    const [left, setLeft] = useRecoilState(editPropertyState('style.position.left'));
+    const [width, setWidth] = useRecoilState(editPropertyState('style.size.width'));
+    const [height, setHeight] = useRecoilState(editPropertyState('style.size.height'));
+    
+    const selectedElement = useRecoilValue(selectedElementState);
+
+    // if (selectedElement === null) return null;
+    if (top === null || left === null || width === null || height === null) return null;
+
     return (
         <Card>
             <Section heading="Position">
-                <Property label="Top" value={element.style.position.top} 
-                onChange={(top) => {
-                    setPosition('top', top);
-                }} />
-                <Property label="Left" value={element.style.position.left} 
-                onChange={(left) => {setPosition('left', left)}} />
+                <Property label="Top" value={top} onChange={setTop} />
+                <Property label="Left" value={left} onChange={setLeft} />
             </Section>
             <Section heading="Size">
-                <Property label="Width" value={element.style.size.width} 
-                onChange={(width) => {
-                    setSize('width', width);
-                }} />
-                <Property label="Height" value={element.style.size.height} 
-                onChange={(value) => {setSize('height', value)}} />
+                <Property label="Width" value={width} onChange={setWidth} />
+                <Property label="Height" value={height} onChange={setHeight} />
             </Section>            
         </Card>
     )
